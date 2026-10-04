@@ -1,0 +1,53 @@
+# Full stack: `docker compose up --build`, then use http://localhost:8080 (the gateway).
+x-db: &db
+  DATABASE_USERNAME: chirpchat
+  DATABASE_PASSWORD: chirpchat
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: chirpchat
+      POSTGRES_PASSWORD: chirpchat
+    volumes:
+      - ./deploy/init-databases.sql:/docker-entrypoint-initdb.d/init.sql:ro
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U chirpchat"]
+      interval: 5s
+      retries: 10
+
+  auth-service:
+    build: { context: ., args: { MODULE: auth-service } }
+    depends_on:
+      postgres: { condition: service_healthy }
+    environment:
+      <<: *db
+      DATABASE_URL: jdbc:postgresql://postgres:5432/chirpchat_auth
+      AUTH_ISSUER: http://auth-service:9000
+      # Set AUTH_SIGNING_KEY (PKCS#8 PEM) to keep tokens valid across restarts.
+      AUTH_SIGNING_KEY: ${AUTH_SIGNING_KEY:-}
+
+  chat-service:
+    build: { context: ., args: { MODULE: chat-service } }
+    depends_on:
+      postgres: { condition: service_healthy }
+      auth-service: { condition: service_started }
+    environment:
+      <<: *db
+      DATABASE_URL: jdbc:postgresql://postgres:5432/chirpchat_chat
+      AUTH_ISSUER: http://auth-service:9000
+      AUTH_JWKS_URI: http://auth-service:9000/.well-known/jwks.json
+      AUTH_BASE_URL: http://auth-service:9000
+
+  gateway:
+    build: { context: ., args: { MODULE: gateway } }
+    depends_on: [auth-service, chat-service]
+    environment:
+      AUTH_SERVICE_URL: http://auth-service:9000
+      CHAT_SERVICE_URL: http://chat-service:9100
+      CHAT_SERVICE_WS_URL: ws://chat-service:9100
+    ports: ["8080:8080"]
+
+volumes:
+  pgdata:
