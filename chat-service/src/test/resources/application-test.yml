@@ -1,0 +1,5 @@
+chat:
+  auth:
+    issuer: http://auth.test
+    jwk-set-uri: http://auth.test/.well-known/jwks.json
+    base-url: http://auth.test

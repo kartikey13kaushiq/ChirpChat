@@ -1,0 +1,42 @@
+spring:
+  application:
+    name: auth-service
+  datasource:
+    url: ${DATABASE_URL:jdbc:postgresql://localhost:5432/chirpchat_auth}
+    username: ${DATABASE_USERNAME:chirpchat}
+    password: ${DATABASE_PASSWORD:chirpchat}
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+  mvc:
+    problemdetails:
+      enabled: true
+  threads:
+    virtual:
+      enabled: true
+server:
+  port: ${PORT:9000}
+  shutdown: graceful
+  forward-headers-strategy: framework
+
+auth:
+  issuer: ${AUTH_ISSUER:http://localhost:9000}
+  audience: chirpchat
+  access-token-ttl: ${ACCESS_TOKEN_TTL:PT15M}
+  refresh-token-ttl: ${REFRESH_TOKEN_TTL:P30D}
+  # PKCS#8 PEM. When empty an ephemeral key is generated at startup (tokens do not survive restarts).
+  signing-key: ${AUTH_SIGNING_KEY:}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      probes:
+        enabled: true
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html

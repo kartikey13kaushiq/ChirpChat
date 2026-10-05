@@ -1,0 +1,44 @@
+spring:
+  application:
+    name: chat-service
+  datasource:
+    url: ${DATABASE_URL:jdbc:postgresql://localhost:5432/chirpchat_chat}
+    username: ${DATABASE_USERNAME:chirpchat}
+    password: ${DATABASE_PASSWORD:chirpchat}
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+  mvc:
+    problemdetails:
+      enabled: true
+  threads:
+    virtual:
+      enabled: true
+server:
+  port: ${PORT:9100}
+  shutdown: graceful
+  forward-headers-strategy: framework
+
+chat:
+  auth:
+    # Tokens are verified locally against the auth service's published keys (fetched and cached).
+    issuer: ${AUTH_ISSUER:http://localhost:9000}
+    audience: chirpchat
+    jwk-set-uri: ${AUTH_JWKS_URI:http://localhost:9000/.well-known/jwks.json}
+    base-url: ${AUTH_BASE_URL:http://localhost:9000}
+  websocket:
+    allowed-origins: ${WS_ALLOWED_ORIGINS:*}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      probes:
+        enabled: true
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
